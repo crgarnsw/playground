@@ -1,0 +1,57 @@
+<html>
+    <head>
+        <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/mobile/deviceTheme.js"></script>
+        <script type="text/javascript">
+          dojoConfig = {
+            async: true,
+            parseOnLoad: false
+          };
+        </script>
+        <script data-dojo-config="async: 1" src="//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js"></script>
+
+        <meta name="viewport" content="width=320, initial-scale=1.0">
+        <title>Demo</title>
+    </head>
+    <body>
+        <script>
+require(["dojo/dom", 
+         "dijit/registry", 
+         "dojo/on", 
+         "dojo/request", 
+         "dojo/parser",
+         "dojox/mobile",
+         "dojox/mobile/compat",
+         "dojox/mobile/ListItem",
+         "dojox/mobile/Switch",
+         "dojox/mobile/EdgeToEdgeList",
+         "dojo/ready"], 
+        function(dom, registry, on, request, parser,
+                 mobile, compat, ListItem, Switch) {
+        parser.parse().then(function() {
+          var arr = ['Nicks Tree', 'Main Tree', 'Maddies Tree', 'Dining Tree'],
+              values = [ 0,0,0,0 ],
+              parent = registry.byId('edgeList');
+          
+          arr.forEach(function(n, i) {
+            i = i%3;
+            var item = new ListItem( { iconPos: "0,"+(i*29)+",29,29",
+            	                       selected: false,
+                                       label: n } );
+            item.addChild(
+            new Switch( { class: "mblItemSwitch",
+                          onStateChanged: function(v) {
+                          	values[i] = (v === 'on' ? 1 : 0);
+                            request.post( 'switch' + values[0] + values[1] + values[2] + values[3] );
+                          }}));
+
+            parent.addChild(item);
+          });
+        });
+        });
+        </script>
+
+        <ul data-dojo-type="dojox/mobile/EdgeToEdgeList" id="edgeList"
+            data-dojo-props='iconBase:"icons.png"'>
+        </ul>
+    </body>
+</html>
