@@ -1,13 +1,13 @@
 <html>
     <head>
         <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojox/mobile/deviceTheme.js"></script>
+        <script data-dojo-config="async: 1" src="//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js"></script>
         <script type="text/javascript">
           dojoConfig = {
             async: true,
             parseOnLoad: false
           };
         </script>
-        <script data-dojo-config="async: 1" src="//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js"></script>
 
         <meta name="viewport" content="width=320, initial-scale=1.0">
         <title>Demo</title>
@@ -24,6 +24,8 @@ require(["dojo/dom",
          "dojox/mobile/ListItem",
          "dojox/mobile/Switch",
          "dojox/mobile/EdgeToEdgeList",
+         "dojox/mobile/View",
+         "dojox/mobile/Heading",
          "dojo/ready"], 
         function(dom, registry, on, request, parser,
                  mobile, compat, ListItem, Switch) {
@@ -50,8 +52,32 @@ require(["dojo/dom",
         });
         </script>
 
+
+<div id="view1" data-dojo-type="dojox/mobile/View">
+  <h1 data-dojo-type="dojox/mobile/Heading">Home</h1>
+  <ul data-dojo-type="dojox/mobile/EdgeToEdgeList">
+    <li data-dojo-type="dojox/mobile/ListItem"
+        data-dojo-props='moveTo:"view2",
+                         transition:"slide"'>Outlets</li>
+
+  </ul>
+</div>
+
+<div id="view2" data-dojo-type="dojox/mobile/View">
+  <h1 data-dojo-type="dojox/mobile/Heading"
+      data-dojo-props='back:"Home", moveTo:"view1"'>Outlets</h1>
         <ul data-dojo-type="dojox/mobile/EdgeToEdgeList" id="edgeList"
             data-dojo-props='iconBase:"icons.png"'>
         </ul>
+</div>
+
+
+
+
+
+
+
+
+
     </body>
 </html>
