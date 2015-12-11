@@ -1,31 +1,29 @@
 var http = require('http'),
-      fs = require('fs'),
-     url = require('url'),
- choices = ["hello world", "goodbye world"];
+    fs = require('fs'),
+    url = require('url');
 
 http.createServer(function(request, response){
-    var path = url.parse(request.url).pathname;
+  var path = url.parse(request.url).pathname;
 
-console.log('path: ' + path);
-    if(path.indexOf( "switch" ) > -1){
-        console.log("request recieved");
-        var string = choices[Math.floor(Math.random()*choices.length)];
-        console.log("string '" + string + "' chosen");
-        response.writeHead(200, {"Content-Type": "text/plain"});
-        response.end(string);
-        console.log("string sent");
-    }else{
-        path = path === '/' ? 'index.htm' : path.substring(1,path.length);
-console.log('path2: ' + path);
+  if(path.indexOf( "init" ) > -1) {
+    response.writeHead( 200, { "Content-Type": "text/plain" });
+    response.end( '[{ "name": "Nicks Tree",   "idx":"1", "val": "true"},' +
+                  ' { "name": "Main Tree",    "idx":"2", "val": "false"},' +
+                  ' { "name": "Maddies Tree", "idx":"3", "val": "true"},' +
+                  ' { "name": "Dining Tree",  "idx":"4", "val": "false"}]' );
+  } else if(path.indexOf( "switch" ) > -1) {
+    response.writeHead(200, {"Content-Type": "text/plain"});
+    response.end('OK');
+  } else {
+    path = path === '/' ? 'index.htm' : path.substring(1,path.length);
 
-        fs.readFile(path, function(err, file) {  
-            if(err) {  
-                // write an error response or nothing here  
-                return;  
-            }  
-            response.writeHead(200, { 'Content-Type': 'text/html' });  
-            response.end(file, "utf-8");  
-        });
-    }
+    fs.readFile(path, function(err, file) {  
+      if(err) {  
+        // write an error response or nothing here  
+        return;  
+      }  
+      response.writeHead(200, { 'Content-Type': 'text/html' });  
+      response.end(file, "utf-8");  
+    });
+  }
 }).listen(8001);
-console.log("server initialized");

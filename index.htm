@@ -30,23 +30,30 @@ require(["dojo/dom",
         function(dom, registry, on, request, parser,
                  mobile, compat, ListItem, Switch) {
         parser.parse().then(function() {
-          var arr = ['Nicks Tree', 'Main Tree', 'Maddies Tree', 'Dining Tree'],
-              values = [ 0,0,0,0 ],
+          var arr,
+              values = [ ],
               parent = registry.byId('edgeList');
-          
-          arr.forEach(function(n, i) {
-            i = i%3;
-            var item = new ListItem( { iconPos: "0,"+(i*29)+",29,29",
-            	                       selected: false,
-                                       label: n } );
-            item.addChild(
-            new Switch( { class: "mblItemSwitch",
-                          onStateChanged: function(v) {
-                          	values[i] = (v === 'on' ? 1 : 0);
-                            request.post( 'switch' + values[0] + values[1] + values[2] + values[3] );
-                          }}));
 
-            parent.addChild(item);
+          request.get( "/init.json", { handleAs:"json" } ).then( function(res) {
+            arr = res;
+          
+            arr.forEach(function(v, i) {
+              var iconIdx = i%3;
+
+                  values[v.idx] = v.val === 'true' ? 1 : 0;
+                  item = new ListItem( { iconPos: "0,"+(iconIdx*29)+",29,29",
+                                         switchIdx: v.idx,
+                                         label: v.name } );
+              item.addChild(
+                new Switch( { class: "mblItemSwitch",
+                              value: v.val === 'true' ? 'on' : 'off',
+                              onStateChanged: function( val ) {
+                                values[v.idx] = (val === 'on' ? 1 : 0);
+                                request.post( 'switch' + values[1] + values[2] + values[3] + values[4] );
+                            }}));
+
+              parent.addChild(item);
+            });
           });
         });
         });
