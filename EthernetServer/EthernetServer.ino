@@ -32,6 +32,8 @@
 #include <SD.h>
 #include <RCSwitch.h>
 
+#define CODES 3
+
 // MAC address from Ethernet shield sticker under board
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 EthernetServer server(80);  // create a server at port 80
@@ -40,14 +42,19 @@ String HTTP_req;            // stores the HTTP request
 File webFile;
 
 RCSwitch mySwitch = RCSwitch();
-const long codes[6] = { 1381716, // 1 off
-                        1381719, // 1 on
-                        1394004, // 2 off ...
-                        1394007,
-                        1397076,
-                        1397079 };
+const long codes[CODES * 2] = { 1381716, // 1 off
+                                1381719, // 1 on
+                                1394004, // 2 off ...
+                                1394007,
+                                1397076,
+                                1397079 };
 
-int lights[3] = { 1, 1, 1 };
+bool lights[CODES] = { false, false, false }; // lights start off
+bool lastLights[CODES] = { false, false, false }; // lights start off
+String names[CODES] = { "Nicks Tree",
+                        "Main Tree",
+                        "Maddies Tree" };
+int indexes[CODES] = { 0, 1, 2 };
 long timeToSend = 99999999;
 
 void setup()
@@ -129,6 +136,10 @@ void loop()
                         // read switch state and analog input
                         GetAjaxData(client);
                         fChange = true;
+                        client.println("HTTP/1.1 200 OK");
+                        client.println();
+                    } else if( HTTP_req.indexOf('init') > -1) {
+                      init(client);
                     }
 
                     if (webFile) {
@@ -160,35 +171,60 @@ void loop()
         client.stop(); // close the connection
     } // end if (client)
 
-    if(timeToSend > millis() || fChange) { // won't work after 50 days.  rollover.
+    if(fChange) {
       fChange = false;
-      Serial.println("Sending");
-      Serial.println(lights[0]);
-      timeToSend = millis() + 10000; // 10 seconds
-      for(int i=0; i<3; i++) {
-        mySwitch.send(codes[i*2 + lights[i]], 24);
-        Serial.println(codes[i*2 + lights[i]]);
-        delay(1000);
+      for(int i=0; i<CODES; i++) {
+        if( lights[i] != lastLights[i] ) {
+          mySwitch.send( codes[i*2 + lights[i] ? 1:0], 24);
+          lastLights[i] = lights[i];
+          delay(100);
+        }
       }
     }
+
+    // if(timeToSend > millis() || fChange) { // won't work after 50 days.  rollover.
+    //   fChange = false;
+    //   Serial.println("Sending");
+    //   Serial.println(lights[0]);
+    //   timeToSend = millis() + 10000; // 10 seconds
+    //   for(int i=0; i<3; i++) {
+    //     mySwitch.send(codes[i*2 + lights[i]], 24);
+    //     Serial.println(codes[i*2 + lights[i]]);
+    //     delay(1000);
+    //   }
+    // }
 }
 
 // send the state of the switch to the web browser
 void GetAjaxData(EthernetClient cl) {
   int idx = HTTP_req.indexOf("switch");
-  lights[0] = HTTP_req[idx + 6] == '0' ? 0 : 1;
-  lights[1] = HTTP_req[idx + 7] == '0' ? 0 : 1;
-  lights[2] = HTTP_req[idx + 8] == '0' ? 0 : 1;
 
-  Serial.print(HTTP_req[idx]);
-  Serial.print(HTTP_req[idx + 1]);
-  Serial.print(HTTP_req[idx + 2]);
-  Serial.print(HTTP_req[idx + 6]);
-  Serial.print(HTTP_req[idx + 7]);
-  Serial.print(HTTP_req[idx + 8]);
-  Serial.println("IN GETAJAX");
+  for(int i=0; i<CODES; i++) {
+    lights[i] = HTTP_req[idx + 6 + i] == '1';
+  }
+
+  // Serial.print(HTTP_req[idx]);
+  // Serial.print(HTTP_req[idx + 1]);
+  // Serial.print(HTTP_req[idx + 2]);
+  // Serial.print(HTTP_req[idx + 6]);
+  // Serial.print(HTTP_req[idx + 7]);
+  // Serial.print(HTTP_req[idx + 8]);
+  // Serial.println("IN GETAJAX");
 }
 
 void init( EthernetClient cl ) {
-  
+  cl.print("[");
+
+  for(int i=0; i<CODES; i++) {
+    cl.print( "{\"name\":\"" );
+    cl.print( names[i] );
+    cl.print( "\",\"idx\":\"" );
+    cl.print( indexes[i] );
+    cl.print( "\",\"val\":" );
+    cl.print( lights[i] ? "\"true\"}" : "\"false\"}" );
+    if(i<CODES-1) {
+      cl.print(",");
+    }
+  }
+  cl.println("]");
 }
