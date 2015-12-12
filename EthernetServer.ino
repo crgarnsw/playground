@@ -1,0 +1,194 @@
+
+
+/*--------------------------------------------------------------
+  Program:      eth_websrv_AJAX_IN
+
+  Description:  Uses Ajax to update the state of two switches
+                and an analog input on a web page. The Arduino
+                web server hosts the web page.
+                Does not use the SD card.
+  
+  Hardware:     Arduino Uno and official Arduino Ethernet
+                shield. Should work with other Arduinos and
+                compatible Ethernet shields.
+                
+  Software:     Developed using Arduino 1.0.3 software
+                Should be compatible with Arduino 1.0 +
+  
+  References:   - WebServer example by David A. Mellis and 
+                  modified by Tom Igoe
+                - Ethernet library documentation:
+                  http://arduino.cc/en/Reference/Ethernet
+                - Learning PHP, MySQL & JavaScript by
+                  Robin Nixon, O'Reilly publishers
+
+  Date:         20 February 2013
+ 
+  Author:       W.A. Smith, http://startingelectronics.org
+--------------------------------------------------------------*/
+
+#include <SPI.h>
+#include <Ethernet.h>
+#include <SD.h>
+#include <RCSwitch.h>
+
+// MAC address from Ethernet shield sticker under board
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+EthernetServer server(80);  // create a server at port 80
+
+String HTTP_req;            // stores the HTTP request
+File webFile;
+
+RCSwitch mySwitch = RCSwitch();
+const long codes[6] = { 1381716, // 1 off
+                        1381719, // 1 on
+                        1394004, // 2 off ...
+                        1394007,
+                        1397076,
+                        1397079 };
+
+int lights[3] = { 1, 1, 1 };
+long timeToSend = 99999999;
+
+void setup()
+{
+    Ethernet.begin(mac);      // initialize Ethernet device
+    server.begin();           // start to listen for clients
+    Serial.begin(9600);       // for diagnostics
+
+    // initialize SD card
+    Serial.println("Initializing SD card...");
+    if (!SD.begin(4)) {
+        Serial.println("ERROR - SD card initialization failed!");
+        return;    // init failed
+    }
+    Serial.println("SUCCESS - SD card initialized.");
+    // check for index.htm file
+    if (!SD.exists("index.htm")) {
+        Serial.println("ERROR - Can't find index.htm file!");
+        return;  // can't find index file
+    }
+    Serial.println("SUCCESS - Found index.htm file.");
+
+    // Transmitter is connected to Arduino Pin #10  
+    mySwitch.enableTransmit(10);
+    pinMode( 9, OUTPUT ); digitalWrite( 9, HIGH );
+    pinMode( 8, OUTPUT ); digitalWrite( 8, LOW );
+}
+
+void loop()
+{
+  bool fChange = false;
+    EthernetClient client = server.available();  // try to get client
+
+    if (client) {  // got client?
+        boolean currentLineIsBlank = true;
+        while (client.connected()) {
+            if (client.available()) {   // client data available to read
+                char c = client.read(); // read 1 byte (character) from client
+                HTTP_req += c;  // save the HTTP request 1 char at a time
+                // last line of client request is blank and ends with \n
+                // respond to client only after last line received
+
+                // print HTTP request character to serial monitor
+                Serial.print(c);
+
+                if (c == '\n' && currentLineIsBlank) {
+
+                  if(HTTP_req.indexOf("GET /icons.png ") > -1) {
+                        webFile = SD.open("icons.png");
+                        Serial.println("Get all icons ***");
+                        if (webFile) {
+                          Serial.println("opened");
+                            client.println("HTTP/1.1 200 OK");
+                            client.println();
+                        }
+
+                  } else if( HTTP_req.indexOf("GET /favicon.ico ") > -1) {
+                    Serial.println("Get favicons ***");
+                        webFile = SD.open("favicon.ico");
+                        Serial.println("Get all icons");
+                        if (webFile) {
+                          Serial.println("opened");
+                            client.println("HTTP/1.1 200 OK");
+                            client.println();
+                        }
+                        
+                  } else if(HTTP_req.indexOf("GET / ") > -1 ||
+                       HTTP_req.indexOf("GET /index.htm") > -1) {
+                        Serial.println("Get / ***");
+                      // send a standard http response header
+                      client.println("HTTP/1.1 200 OK");
+                      client.println("Content-Type: text/html");
+                      client.println("Connection: keep-alive");
+                      client.println();
+                      webFile = SD.open("index.htm");        // open web page file
+                      
+                    } else if( HTTP_req.indexOf("switch") > -1) {
+                      Serial.println("Get switch ***");
+                        // read switch state and analog input
+                        GetAjaxData(client);
+                        fChange = true;
+                    }
+
+                    if (webFile) {
+                      while(webFile.available()) {
+                        client.write(webFile.read()); // send web page to client
+                      }
+                      webFile.close();
+                    }
+
+                    // display received HTTP request on serial port
+                    Serial.print(HTTP_req);
+                    HTTP_req = "";            // finished with request, empty string
+                    break;
+                }
+                // every line of text received from the client ends with \r\n
+                if (c == '\n') {
+                    // last character on line of received text
+                    // starting new line with next character read
+                    currentLineIsBlank = true;
+                } 
+                else if (c != '\r') {
+                    // a text character was received from client
+                    currentLineIsBlank = false;
+                }
+            } // end if (client.available())
+        } // end while (client.connected())
+        delay(1);      // give the web browser time to receive the data
+        Serial.println("Done");
+        client.stop(); // close the connection
+    } // end if (client)
+
+    if(timeToSend > millis() || fChange) { // won't work after 50 days.  rollover.
+      fChange = false;
+      Serial.println("Sending");
+      Serial.println(lights[0]);
+      timeToSend = millis() + 10000; // 10 seconds
+      for(int i=0; i<3; i++) {
+        mySwitch.send(codes[i*2 + lights[i]], 24);
+        Serial.println(codes[i*2 + lights[i]]);
+        delay(1000);
+      }
+    }
+}
+
+// send the state of the switch to the web browser
+void GetAjaxData(EthernetClient cl) {
+  int idx = HTTP_req.indexOf("switch");
+  lights[0] = HTTP_req[idx + 6] == '0' ? 0 : 1;
+  lights[1] = HTTP_req[idx + 7] == '0' ? 0 : 1;
+  lights[2] = HTTP_req[idx + 8] == '0' ? 0 : 1;
+
+  Serial.print(HTTP_req[idx]);
+  Serial.print(HTTP_req[idx + 1]);
+  Serial.print(HTTP_req[idx + 2]);
+  Serial.print(HTTP_req[idx + 6]);
+  Serial.print(HTTP_req[idx + 7]);
+  Serial.print(HTTP_req[idx + 8]);
+  Serial.println("IN GETAJAX");
+}
+
+void init( EthernetClient cl ) {
+  
+}
