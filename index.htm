@@ -26,7 +26,7 @@ require(["dojo/dom",
          "dojox/mobile/EdgeToEdgeList",
          "dojox/mobile/View",
          "dojox/mobile/Heading",
-         "dojo/ready"], 
+         "dojo/domReady!"], 
         function(dom, registry, on, request, parser,
                  mobile, compat, ListItem, Switch) {
         parser.parse().then(function() {
@@ -49,7 +49,7 @@ require(["dojo/dom",
                               value: v.val === 'true' ? 'on' : 'off',
                               onStateChanged: function( val ) {
                                 values[v.idx] = (val === 'on' ? 1 : 0);
-                                request.post( 'switch' + values[1] + values[2] + values[3] + values[4] );
+                                request.post( 'switch' + values[0] + values[1] + values[2] );
                             }}));
 
               parent.addChild(item);
@@ -77,14 +77,5 @@ require(["dojo/dom",
             data-dojo-props='iconBase:"icons.png"'>
         </ul>
 </div>
-
-
-
-
-
-
-
-
-
-    </body>
+</body>
 </html>
