@@ -17,9 +17,12 @@ http.createServer(function(request, response){
   } else {
     path = path === '/' ? 'index.htm' : path.substring(1,path.length);
 
+console.log("path: "  + path);
+
     fs.readFile(path, function(err, file) {  
       if(err) {  
         // write an error response or nothing here  
+        console.error("Error reading file: " + path);
         return;  
       }  
       response.writeHead(200, { 'Content-Type': 'text/html' });  
