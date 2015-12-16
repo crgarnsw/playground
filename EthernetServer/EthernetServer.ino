@@ -100,60 +100,37 @@ void loop()
                 // print HTTP request character to serial monitor
                 Serial.print(c);
 
-                if (c == '\n' && currentLineIsBlank) {
+                if (c == '\n' && currentLineIsBlank) {   
+                if( HTTP_req.indexOf("switch") > -1) {
+                  Serial.println("Get switch ***");
+                  GetAjaxData(client);
+                  fChange = true;
+                  client.println("HTTP/1.1 200 OK");
+                  client.println();
+                } else if( HTTP_req.indexOf("init") > -1 ) {                 
+                  init(client);
+                } else {
+                  int start = HTTP_req.indexOf(' ') + 1;
+                  HTTP_req = HTTP_req.substring( start, HTTP_req.indexOf( ' ', start+1 ));
 
-                  if(HTTP_req.indexOf("GET /icons.png ") > -1) {
-                        webFile = SD.open("icons.png");
-                        Serial.println("Get all icons ***");
-                        if (webFile) {
-                          Serial.println("opened");
-                            client.println("HTTP/1.1 200 OK");
-                            client.println();
-                        }
+                  if(HTTP_req.equals("/")) {
+                    HTTP_req = "index.htm";
+                  }
 
-                  } else if( HTTP_req.indexOf("GET /favicon.ico ") > -1) {
-                    Serial.println("Get favicons ***");
-                        webFile = SD.open("favicon.ico");
-                        Serial.println("Get all icons");
-                        if (webFile) {
-                          Serial.println("opened");
-                            client.println("HTTP/1.1 200 OK");
-                            client.println();
-                        }
-                        
-                  } else if(HTTP_req.indexOf("GET / ") > -1 ||
-                       HTTP_req.indexOf("GET /index.htm") > -1) {
-                        Serial.println("Get / ***");
-                      // send a standard http response header
-                      client.println("HTTP/1.1 200 OK");
-                      client.println("Content-Type: text/html");
-                      client.println("Connection: keep-alive");
-                      client.println();
-                      webFile = SD.open("index.htm");        // open web page file
-                      
-                    } else if( HTTP_req.indexOf("switch") > -1) {
-                      Serial.println("Get switch ***");
-                        // read switch state and analog input
-                        GetAjaxData(client);
-                        fChange = true;
-                        client.println("HTTP/1.1 200 OK");
-                        client.println();
-                    } else if( HTTP_req.indexOf('init') > -1) {
-                      init(client);
-                    }
-
-                    if (webFile) {
-                      while(webFile.available()) {
-                        client.write(webFile.read()); // send web page to client
-                      }
-                      webFile.close();
-                    }
-
-                    // display received HTTP request on serial port
-                    Serial.print(HTTP_req);
-                    HTTP_req = "";            // finished with request, empty string
-                    break;
+                  webFile = SD.open(HTTP_req);
                 }
+
+                if (webFile) {
+                  while(webFile.available()) {
+                    client.write(webFile.read()); // send web page to client
+                  }
+                  webFile.close();
+               }
+
+                HTTP_req = "";            // finished with request, empty string
+                break;
+                }
+
                 // every line of text received from the client ends with \r\n
                 if (c == '\n') {
                     // last character on line of received text
