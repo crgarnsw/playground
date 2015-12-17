@@ -46,8 +46,12 @@ require(["dojo/dom",
 
       // setup blockly
       var blocklyArea = dom.byId('blocklyArea'),
-          blocklyDiv = dom.byId('blocklyArea'),
-          workspace = Blockly.inject(blocklyDiv, {toolbox: document.getElementById('toolbox')}),
+          blocklyDiv = dom.byId('blocklyDiv'),
+          workspace = Blockly.inject(blocklyDiv, {toolbox:  '<xml>' +
+                                                              '<block type="controls_if"></block>' +
+                                                              '<block type="controls_repeat_ext"></block>' +
+                                                              '<block type="logic_compare"></block>' +
+                                                            '</xml>'}),
           onresize;
       onresize = function(e) {
         var x=0, y=0, element = blocklyArea;
