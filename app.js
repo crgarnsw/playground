@@ -38,10 +38,17 @@ require(["dojo/dom",
                                        value: v.val === 'true' ? 'on' : 'off',
                                        onStateChanged: function( val ) {
                                          values[v.idx] = (val === 'on' ? 1 : 0);
-                                         request.post( 'switch' + values[0] + values[1] + values[2] );
+                                         var postMsg = 'switch';
+                                         values.forEach(function(i) { postMsg += i; });
+                                         request.post( postMsg );
                                       }}));
           parent.addChild(item);
         });
+      });
+
+      // setup + button
+      on( dom.byId('idAddOutlet'), 'click', function() {
+        request.post( 'plusOutlet' );
       });
 
       // setup blockly

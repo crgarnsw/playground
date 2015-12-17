@@ -31,8 +31,9 @@
 #include <Ethernet.h>
 #include <SD.h>
 #include <RCSwitch.h>
+#include "Switch433.h"
 
-#define CODES 3
+#define CODES 6
 
 // MAC address from Ethernet shield sticker under board
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
@@ -41,20 +42,30 @@ EthernetServer server(80);  // create a server at port 80
 String HTTP_req;            // stores the HTTP request
 File webFile;
 
-RCSwitch mySwitch = RCSwitch();
-const long codes[CODES * 2] = { 1381716, // 1 off
-                                1381719, // 1 on
-                                1394004, // 2 off ...
-                                1394007,
-                                1397076,
-                                1397079 };
+long codes[CODES * 2] = { 1381716, // 1 off
+                          1381719, // 1 on
+                          1394004, // 2 off ...
+                          1394007,
+                          1397076,
+                          1397079,
+                          4527444, //b1 off
+                          4527447,
+                          4539732,
+                          4539735,
+                          4542804,
+                          4542807 };
 
-bool lights[CODES] = { false, false, false }; // lights start off
-bool lastLights[CODES] = { false, false, false }; // lights start off
+bool lights[CODES] = { false, false, false, false, false, false }; // lights start off
+bool lastLights[CODES] = { false, false, false, false, false, false }; // lights start off
 String names[CODES] = { "Nicks Tree",
                         "Main Tree",
-                        "Maddies Tree" };
-int indexes[CODES] = { 0, 1, 2 };
+                        "Maddies Tree",
+                        "Dining Tree",
+                        "N/A",
+                        "N/A" };
+int indexes[CODES] = { 0, 1, 2, 3, 4, 5 };
+Switch433 switch433(codes);
+
 long timeToSend = 99999999;
 
 void setup()
@@ -77,16 +88,15 @@ void setup()
     }
     Serial.println("SUCCESS - Found index.htm file.");
 
-    // Transmitter is connected to Arduino Pin #10  
-    mySwitch.enableTransmit(10);
     pinMode( 9, OUTPUT ); digitalWrite( 9, HIGH );
     pinMode( 8, OUTPUT ); digitalWrite( 8, LOW );
+    switch433.setup();
 }
 
 void loop()
 {
   bool fChange = false;
-    EthernetClient client = server.available();  // try to get client
+  EthernetClient client = server.available();  // try to get client
 
     if (client) {  // got client?
         boolean currentLineIsBlank = true;
@@ -109,6 +119,10 @@ void loop()
                   client.println();
                 } else if( HTTP_req.indexOf("init") > -1 ) {                 
                   init(client);
+                } else if( HTTP_req.indexOf("plusOutlet") > -1 ) {
+                  switch433.readValue();
+                  client.println("HTTP/1.1 200 OK");
+                  client.println();
                 } else {
                   int start = HTTP_req.indexOf(' ') + 1;
                   HTTP_req = HTTP_req.substring( start, HTTP_req.indexOf( ' ', start+1 ));
@@ -152,41 +166,21 @@ void loop()
       fChange = false;
       for(int i=0; i<CODES; i++) {
         if( lights[i] != lastLights[i] ) {
-          mySwitch.send( codes[i*2 + lights[i] ? 1:0], 24);
+          switch433.send( i*2 + (lights[i] ? 1:0) );
           lastLights[i] = lights[i];
           delay(100);
         }
       }
     }
-
-    // if(timeToSend > millis() || fChange) { // won't work after 50 days.  rollover.
-    //   fChange = false;
-    //   Serial.println("Sending");
-    //   Serial.println(lights[0]);
-    //   timeToSend = millis() + 10000; // 10 seconds
-    //   for(int i=0; i<3; i++) {
-    //     mySwitch.send(codes[i*2 + lights[i]], 24);
-    //     Serial.println(codes[i*2 + lights[i]]);
-    //     delay(1000);
-    //   }
-    // }
 }
 
-// send the state of the switch to the web browser
+// update the switch configuration
 void GetAjaxData(EthernetClient cl) {
   int idx = HTTP_req.indexOf("switch");
 
   for(int i=0; i<CODES; i++) {
     lights[i] = HTTP_req[idx + 6 + i] == '1';
   }
-
-  // Serial.print(HTTP_req[idx]);
-  // Serial.print(HTTP_req[idx + 1]);
-  // Serial.print(HTTP_req[idx + 2]);
-  // Serial.print(HTTP_req[idx + 6]);
-  // Serial.print(HTTP_req[idx + 7]);
-  // Serial.print(HTTP_req[idx + 8]);
-  // Serial.println("IN GETAJAX");
 }
 
 void init( EthernetClient cl ) {

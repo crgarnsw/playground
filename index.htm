@@ -32,7 +32,12 @@
 
     <div id="view2" data-dojo-type="dojox/mobile/View">
       <h1 data-dojo-type="dojox/mobile/Heading"
-          data-dojo-props='back:"Home", moveTo:"view1"'>Outlets</h1>
+          data-dojo-props='back:"Home", moveTo:"view1",label:"Outlets"'>
+        <span id="idAddOutlet"
+              data-dojo-type="dojox/mobile/ToolBarButton"
+              data-dojo-props='icon:"mblDomButtonWhitePlus"'
+              style="float:right;"</span>
+      </h1>
       <ul data-dojo-type="dojox/mobile/EdgeToEdgeList" id="edgeList"
           data-dojo-props='iconBase:"icons.png"'>
       </ul>
