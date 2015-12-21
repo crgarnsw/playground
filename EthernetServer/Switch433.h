@@ -24,8 +24,8 @@ class Switch433 {
       mySwitch.enableTransmit(10); // Transmitter is connected to Arduino Pin #10  
     };
 
-    void readValue() {
-      long time = millis();
+    bool readValue() {
+      bool ret = false;
 
       if(mySwitch.available()) {
         int value = mySwitch.getReceivedValue();
@@ -45,7 +45,10 @@ class Switch433 {
           Serial.println( mySwitch.getReceivedProtocol() );
         }
         mySwitch.resetAvailable();
+        ret = true;
       }
+
+      return ret;
     };
 
     void send( int a_idx ) {

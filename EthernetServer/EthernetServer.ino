@@ -61,10 +61,13 @@ String names[CODES] = { "Nicks Tree",
                         "Main Tree",
                         "Maddies Tree",
                         "Dining Tree",
-                        "N/A",
+                        "Living Tree",
                         "N/A" };
 int indexes[CODES] = { 0, 1, 2, 3, 4, 5 };
 Switch433 switch433(codes);
+bool fWaitingOutlet = false;
+long timeStartWaiting;
+EthernetClient waitingClient;
 
 long timeToSend = 99999999;
 
@@ -93,9 +96,24 @@ void setup()
     switch433.setup();
 }
 
-void loop()
-{
+void loop() {
   bool fChange = false;
+
+  if(fWaitingOutlet) {
+    bool fDone = switch433.readValue();
+    if(fDone) {
+      fWaitingOutlet = false;
+      waitingClient.println("HTTP/1.1 200 OK");
+      waitingClient.println();
+    } else if( (timeStartWaiting + 10000) > millis() ) {
+      fWaitingOutlet = false;
+      waitingClient.println("HTTP/1.1 200 OK"); // send a bad value
+      waitingClient.println();
+    } else {
+      return;
+    }
+  }
+
   EthernetClient client = server.available();  // try to get client
 
     if (client) {  // got client?
@@ -120,9 +138,10 @@ void loop()
                 } else if( HTTP_req.indexOf("init") > -1 ) {                 
                   init(client);
                 } else if( HTTP_req.indexOf("plusOutlet") > -1 ) {
-                  switch433.readValue();
-                  client.println("HTTP/1.1 200 OK");
-                  client.println();
+                  fWaitingOutlet = true;
+                  timeStartWaiting = millis();
+                  waitingClient = client;
+                  return;
                 } else {
                   int start = HTTP_req.indexOf(' ') + 1;
                   HTTP_req = HTTP_req.substring( start, HTTP_req.indexOf( ' ', start+1 ));
