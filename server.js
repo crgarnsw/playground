@@ -14,6 +14,9 @@ http.createServer(function(request, response){
   } else if(path.indexOf( "switch" ) > -1) {
     response.writeHead(200, {"Content-Type": "text/plain"});
     response.end('OK');
+  } else if(path.indexOf( "plusOutlet") > -1) {
+    response.writeHead(200, {"Content-Type": "text/plain"});
+    response.end('OK');
   } else {
     path = path === '/' ? 'index.htm' : path.substring(1,path.length);
 
