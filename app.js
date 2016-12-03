@@ -3,12 +3,12 @@
  *   Main app for home control.
  */
 
-require(["dojo/dom", 
-         "dojo/on", 
-         "dojo/request", 
+require(["dojo/dom",
+         "dojo/on",
+         "dojo/request",
          "dojo/parser",
          "dojo/aspect",
-         "dijit/registry", 
+         "dijit/registry",
          "dojox/mobile",
          "dojox/mobile/compat",
          "dojox/mobile/ListItem",
@@ -17,7 +17,7 @@ require(["dojo/dom",
          "dojox/mobile/View",
          "dojox/mobile/Heading",
          "dojox/mobile/Pane",
-         "dojo/ready"], 
+         "dojo/ready"],
   function(dom, on,request, parser, aspect, registry,
            mobile, compat, ListItem, Switch) {
     parser.parse().then(function() {
@@ -54,12 +54,13 @@ require(["dojo/dom",
       // setup blockly
       var blocklyArea = dom.byId('blocklyArea'),
           blocklyDiv = dom.byId('blocklyDiv'),
-          workspace = Blockly.inject(blocklyDiv, {toolbox:  '<xml>' +
-                                                              '<block type="controls_if"></block>' +
-                                                              '<block type="controls_repeat_ext"></block>' +
-                                                              '<block type="logic_compare"></block>' +
-                                                            '</xml>'}),
           onresize;
+
+      workspace = Blockly.inject(blocklyDiv, {toolbox:  '<xml>' +
+                                                        '<block type="controls_if"></block>' +
+                                                        '<block type="controls_repeat_ext"></block>' +
+                                                        '<block type="logic_compare"></block>' +
+                                                        '</xml>'});
       onresize = function(e) {
         var x=0, y=0, element = blocklyArea;
 
@@ -81,7 +82,7 @@ require(["dojo/dom",
       aspect.after( registry.byId('view3'), "onAfterTransitionIn", function() {
         onresize();
         Blockly.fireUiEvent( window, 'resize' );
-      }); 
+      });
 
       window.addEventListener('resize', onresize, false);
       onresize();
